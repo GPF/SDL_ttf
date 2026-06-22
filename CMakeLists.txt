@@ -437,6 +437,40 @@ if(SDL2TTF_SAMPLES)
         endif()
         target_link_libraries(${prog} PRIVATE ${sdl2_target_name})
     endforeach()
+
+    if(PLATFORM_DREAMCAST OR __DREAMCAST__)
+        include(kallistios)
+
+        set(SDL2TTF_DREAMCAST_SAMPLE_FONT "" CACHE FILEPATH "Font file to embed in the Dreamcast sample romdisks")
+        if(NOT SDL2TTF_DREAMCAST_SAMPLE_FONT)
+            file(GLOB_RECURSE SDL2TTF_DREAMCAST_SAMPLE_FONTS
+                "$ENV{KOS_BASE}/examples/*.ttf"
+                "$ENV{KOS_BASE}/examples/*.otf"
+            )
+            if(SDL2TTF_DREAMCAST_SAMPLE_FONTS)
+                list(GET SDL2TTF_DREAMCAST_SAMPLE_FONTS 0 SDL2TTF_DREAMCAST_SAMPLE_FONT)
+            elseif(EXISTS "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
+                set(SDL2TTF_DREAMCAST_SAMPLE_FONT "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
+            elseif(EXISTS "/usr/share/fonts/truetype/lato/Lato-Regular.ttf")
+                set(SDL2TTF_DREAMCAST_SAMPLE_FONT "/usr/share/fonts/truetype/lato/Lato-Regular.ttf")
+            elseif(EXISTS "/usr/share/fonts/opentype/urw-base35/NimbusSans-Regular.otf")
+                set(SDL2TTF_DREAMCAST_SAMPLE_FONT "/usr/share/fonts/opentype/urw-base35/NimbusSans-Regular.otf")
+            endif()
+        endif()
+
+        if(NOT SDL2TTF_DREAMCAST_SAMPLE_FONT OR NOT EXISTS "${SDL2TTF_DREAMCAST_SAMPLE_FONT}")
+            message(FATAL_ERROR "SDL2TTF_DREAMCAST_SAMPLE_FONT must point to a .ttf or .otf file for the Dreamcast samples")
+        endif()
+
+        foreach(prog glfont showfont)
+            target_compile_definitions(${prog} PRIVATE __DREAMCAST__=1)
+            target_link_libraries(${prog} PRIVATE png z bz2 z kosutils)
+            set(KOS_ROMDISK_DIR "${CMAKE_CURRENT_BINARY_DIR}/romdisk_${prog}")
+            file(MAKE_DIRECTORY "${KOS_ROMDISK_DIR}")
+            configure_file("${SDL2TTF_DREAMCAST_SAMPLE_FONT}" "${KOS_ROMDISK_DIR}/font.ttf" COPYONLY)
+            kos_add_romdisk(${prog} "${KOS_ROMDISK_DIR}" ${prog})
+        endforeach()
+    endif()
 endif()
 
 add_library(SDL2::ttf INTERFACE IMPORTED GLOBAL)

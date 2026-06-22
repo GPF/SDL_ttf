@@ -70,7 +70,9 @@ static void cleanup(int exitcode)
 
 int main(int argc, char *argv[])
 {
-    char *argv0 = argv[0];
+    int sample_argc;
+    char **sample_argv;
+    char *argv0;
     SDL_Window *window;
     SDL_Renderer *renderer;
     TTF_Font *font;
@@ -97,6 +99,24 @@ int main(int argc, char *argv[])
     } rendertype;
     char *message, string[128];
 
+#ifdef __DREAMCAST__
+    static char *dreamcast_argv[] = {
+        "showfont",
+        "/rd/font.ttf",
+        "24",
+        "Dreamcast SDL_ttf showfont",
+        NULL
+    };
+    (void)argc;
+    (void)argv;
+    sample_argc = (int)(sizeof(dreamcast_argv) / sizeof(dreamcast_argv[0])) - 1;
+    sample_argv = dreamcast_argv;
+#else
+    sample_argc = argc;
+    sample_argv = argv;
+#endif
+    argv0 = sample_argv[0];
+
     /* Look for special execution mode */
     dump = 0;
     /* Look for special rendering types */
@@ -106,64 +126,67 @@ int main(int argc, char *argv[])
     outline = 0;
     hinting = TTF_HINTING_NORMAL;
     kerning = 1;
+#ifdef __DREAMCAST__
+    wrap = 0;
+#endif
     /* Default is black and white */
     forecol = &black;
     backcol = &white;
-    for (i=1; argv[i] && argv[i][0] == '-'; ++i) {
-        if (SDL_strcmp(argv[i], "-solid") == 0) {
+    for (i=1; sample_argv[i] && sample_argv[i][0] == '-'; ++i) {
+        if (SDL_strcmp(sample_argv[i], "-solid") == 0) {
             rendermethod = TextRenderSolid;
         } else
-        if (SDL_strcmp(argv[i], "-shaded") == 0) {
+        if (SDL_strcmp(sample_argv[i], "-shaded") == 0) {
             rendermethod = TextRenderShaded;
         } else
-        if (SDL_strcmp(argv[i], "-blended") == 0) {
+        if (SDL_strcmp(sample_argv[i], "-blended") == 0) {
             rendermethod = TextRenderBlended;
         } else
-        if (SDL_strcmp(argv[i], "-utf8") == 0) {
+        if (SDL_strcmp(sample_argv[i], "-utf8") == 0) {
             rendertype = RENDER_UTF8;
         } else
-        if (SDL_strcmp(argv[i], "-unicode") == 0) {
+        if (SDL_strcmp(sample_argv[i], "-unicode") == 0) {
             rendertype = RENDER_UNICODE;
         } else
-        if (SDL_strcmp(argv[i], "-b") == 0) {
+        if (SDL_strcmp(sample_argv[i], "-b") == 0) {
             renderstyle |= TTF_STYLE_BOLD;
         } else
-        if (SDL_strcmp(argv[i], "-i") == 0) {
+        if (SDL_strcmp(sample_argv[i], "-i") == 0) {
             renderstyle |= TTF_STYLE_ITALIC;
         } else
-        if (SDL_strcmp(argv[i], "-u") == 0) {
+        if (SDL_strcmp(sample_argv[i], "-u") == 0) {
             renderstyle |= TTF_STYLE_UNDERLINE;
         } else
-        if (SDL_strcmp(argv[i], "-s") == 0) {
+        if (SDL_strcmp(sample_argv[i], "-s") == 0) {
             renderstyle |= TTF_STYLE_STRIKETHROUGH;
         } else
-        if (SDL_strcmp(argv[i], "-outline") == 0) {
-            if (SDL_sscanf(argv[++i], "%d", &outline) != 1) {
+        if (SDL_strcmp(sample_argv[i], "-outline") == 0) {
+            if (SDL_sscanf(sample_argv[++i], "%d", &outline) != 1) {
                 SDL_Log(TTF_SHOWFONT_USAGE, argv0);
                 return(1);
             }
         } else
-        if (SDL_strcmp(argv[i], "-hintlight") == 0) {
+        if (SDL_strcmp(sample_argv[i], "-hintlight") == 0) {
             hinting = TTF_HINTING_LIGHT;
         } else
-        if (SDL_strcmp(argv[i], "-hintmono") == 0) {
+        if (SDL_strcmp(sample_argv[i], "-hintmono") == 0) {
             hinting = TTF_HINTING_MONO;
         } else
-        if (SDL_strcmp(argv[i], "-hintnone") == 0) {
+        if (SDL_strcmp(sample_argv[i], "-hintnone") == 0) {
             hinting = TTF_HINTING_NONE;
         } else
-        if (SDL_strcmp(argv[i], "-nokerning") == 0) {
+        if (SDL_strcmp(sample_argv[i], "-nokerning") == 0) {
             kerning = 0;
         } else
-        if (SDL_strcmp(argv[i], "-wrap") == 0) {
+        if (SDL_strcmp(sample_argv[i], "-wrap") == 0) {
             wrap = 1;
         } else
-        if (SDL_strcmp(argv[i], "-dump") == 0) {
+        if (SDL_strcmp(sample_argv[i], "-dump") == 0) {
             dump = 1;
         } else
-        if (SDL_strcmp(argv[i], "-fgcol") == 0) {
+        if (SDL_strcmp(sample_argv[i], "-fgcol") == 0) {
             int r, g, b, a = 0xFF;
-            if (SDL_sscanf(argv[++i], "%d,%d,%d,%d", &r, &g, &b, &a) < 3) {
+            if (SDL_sscanf(sample_argv[++i], "%d,%d,%d,%d", &r, &g, &b, &a) < 3) {
                 SDL_Log(TTF_SHOWFONT_USAGE, argv0);
                 return(1);
             }
@@ -172,9 +195,9 @@ int main(int argc, char *argv[])
             forecol->b = (Uint8)b;
             forecol->a = (Uint8)a;
         } else
-        if (SDL_strcmp(argv[i], "-bgcol") == 0) {
+        if (SDL_strcmp(sample_argv[i], "-bgcol") == 0) {
             int r, g, b, a = 0xFF;
-            if (SDL_sscanf(argv[++i], "%d,%d,%d,%d", &r, &g, &b, &a) < 3) {
+            if (SDL_sscanf(sample_argv[++i], "%d,%d,%d,%d", &r, &g, &b, &a) < 3) {
                 SDL_Log(TTF_SHOWFONT_USAGE, argv0);
                 return(1);
             }
@@ -187,14 +210,46 @@ int main(int argc, char *argv[])
             return(1);
         }
     }
-    argv += i;
-    argc -= i;
+    sample_argv += i;
+    sample_argc -= i;
 
     /* Check usage */
-    if (!argv[0]) {
+    if (!sample_argv[0]) {
         SDL_Log(TTF_SHOWFONT_USAGE, argv0);
         return(1);
     }
+
+#ifdef __DREAMCAST__
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER) < 0) {
+        SDL_Log("Couldn't initialize SDL: %s\n", SDL_GetError());
+        return(2);
+    }
+
+    {
+        SDL_Log("SDL_CreateWindow");
+        window = SDL_CreateWindow("showfont",
+                                  SDL_WINDOWPOS_UNDEFINED,
+                                  SDL_WINDOWPOS_UNDEFINED,
+                                  WIDTH, HEIGHT, SDL_WINDOW_SHOWN);
+        if (window == NULL) {
+            SDL_Log("SDL_CreateWindow() failed: %s\n", SDL_GetError());
+            cleanup(2);
+        }
+
+        SDL_Log("SDL_CreateRenderer");
+        renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+        if (renderer == NULL) {
+            SDL_Log("SDL_CreateRenderer() failed: %s\n", SDL_GetError());
+            cleanup(2);
+        }
+        {
+            SDL_RendererInfo info;
+            if (SDL_GetRendererInfo(renderer, &info) == 0) {
+                SDL_Log("Using renderer: %s flags=0x%x", info.name, (unsigned int)info.flags);
+            }
+        }
+    }
+#endif
 
     /* Initialize the TTF library */
     if (TTF_Init() < 0) {
@@ -205,8 +260,8 @@ int main(int argc, char *argv[])
 
     /* Open the font file with the requested point size */
     ptsize = 0;
-    if (argc > 1) {
-        ptsize = atoi(argv[1]);
+    if (sample_argc > 1) {
+        ptsize = atoi(sample_argv[1]);
     }
     if (ptsize == 0) {
         i = 2;
@@ -214,10 +269,10 @@ int main(int argc, char *argv[])
     } else {
         i = 3;
     }
-    font = TTF_OpenFont(argv[0], ptsize);
+    font = TTF_OpenFont(sample_argv[0], ptsize);
     if (font == NULL) {
         SDL_Log("Couldn't load %d pt font from %s: %s\n",
-                    ptsize, argv[0], SDL_GetError());
+                    ptsize, sample_argv[0], SDL_GetError());
         cleanup(2);
     }
     TTF_SetFontStyle(font, renderstyle);
@@ -241,14 +296,17 @@ int main(int argc, char *argv[])
         cleanup(0);
     }
 
+#ifndef __DREAMCAST__
     /* Create a window */
     if (SDL_CreateWindowAndRenderer(WIDTH, HEIGHT, 0, &window, &renderer) < 0) {
+        printf("Couldn't create window and renderer: %s\n", SDL_GetError());
         SDL_Log("SDL_CreateWindowAndRenderer() failed: %s\n", SDL_GetError());
         cleanup(2);
     }
-
+#endif
+    
     /* Show which font file we're looking at */
-    SDL_snprintf(string, sizeof(string), "Font file: %s", argv[0]);  /* possible overflow */
+    SDL_snprintf(string, sizeof(string), "Font file: %s", sample_argv[0]);  /* possible overflow */
     switch (rendermethod) {
     case TextRenderSolid:
         text = TTF_RenderText_Solid(font, string, *forecol);
@@ -270,8 +328,8 @@ int main(int argc, char *argv[])
     }
 
     /* Render and center the message */
-    if (argc > 2) {
-        message = argv[2];
+    if (sample_argc > 2) {
+        message = sample_argv[2];
     } else {
         message = DEFAULT_TEXT;
     }

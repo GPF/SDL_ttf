@@ -35,6 +35,12 @@
 
 #include "SDL_opengl.h"
 
+#ifdef __DREAMCAST__
+#define glPushAttrib(mask) ((void)(mask))
+#define glPopAttrib() ((void)0)
+#define glVertex2i(x, y) glVertex2f((GLfloat)(x), (GLfloat)(y))
+#endif
+
 #define DEFAULT_PTSIZE  18
 #define DEFAULT_TEXT    "The quick brown fox jumped over the lazy dog"
 #define WIDTH   640
@@ -161,7 +167,9 @@ static void cleanup(int exitcode)
 
 int main(int argc, char *argv[])
 {
-    char *argv0 = argv[0];
+    int sample_argc;
+    char **sample_argv;
+    char *argv0;
     SDL_Window *window;
     SDL_GLContext context;
     TTF_Font *font;
@@ -204,6 +212,24 @@ int main(int argc, char *argv[])
     } rendertype;
     char *message;
 
+#ifdef __DREAMCAST__
+    static char *dreamcast_argv[] = {
+        "glfont",
+        "/rd/font.ttf",
+        "24",
+        "Dreamcast SDL_ttf glfont",
+        NULL
+    };
+    (void)argc;
+    (void)argv;
+    sample_argc = (int)(sizeof(dreamcast_argv) / sizeof(dreamcast_argv[0])) - 1;
+    sample_argv = dreamcast_argv;
+#else
+    sample_argc = argc;
+    sample_argv = argv;
+#endif
+    argv0 = sample_argv[0];
+
     /* Look for special execution mode */
     dump = 0;
     /* Look for special rendering types */
@@ -212,28 +238,28 @@ int main(int argc, char *argv[])
     /* Default is black and white */
     forecol = &black;
     backcol = &white;
-    for (i=1; argv[i] && argv[i][0] == '-'; ++i) {
-        if (strcmp(argv[i], "-utf8") == 0) {
+    for (i=1; sample_argv[i] && sample_argv[i][0] == '-'; ++i) {
+        if (strcmp(sample_argv[i], "-utf8") == 0) {
             rendertype = RENDER_UTF8;
         } else
-        if (strcmp(argv[i], "-unicode") == 0) {
+        if (strcmp(sample_argv[i], "-unicode") == 0) {
             rendertype = RENDER_UNICODE;
         } else
-        if (strcmp(argv[i], "-b") == 0) {
+        if (strcmp(sample_argv[i], "-b") == 0) {
             renderstyle |= TTF_STYLE_BOLD;
         } else
-        if (strcmp(argv[i], "-i") == 0) {
+        if (strcmp(sample_argv[i], "-i") == 0) {
             renderstyle |= TTF_STYLE_ITALIC;
         } else
-        if (strcmp(argv[i], "-u") == 0) {
+        if (strcmp(sample_argv[i], "-u") == 0) {
             renderstyle |= TTF_STYLE_UNDERLINE;
         } else
-        if (strcmp(argv[i], "-dump") == 0) {
+        if (strcmp(sample_argv[i], "-dump") == 0) {
             dump = 1;
         } else
-        if (strcmp(argv[i], "-fgcol") == 0) {
+        if (strcmp(sample_argv[i], "-fgcol") == 0) {
             int r, g, b;
-            if (sscanf (argv[++i], "%d,%d,%d", &r, &g, &b) != 3) {
+            if (sscanf (sample_argv[++i], "%d,%d,%d", &r, &g, &b) != 3) {
                 fprintf(stderr, TTF_GLFONT_USAGE, argv0);
                 return(1);
             }
@@ -241,9 +267,9 @@ int main(int argc, char *argv[])
             forecol->g = (Uint8)g;
             forecol->b = (Uint8)b;
         } else
-        if (strcmp(argv[i], "-bgcol") == 0) {
+        if (strcmp(sample_argv[i], "-bgcol") == 0) {
             int r, g, b;
-            if (sscanf (argv[++i], "%d,%d,%d", &r, &g, &b) != 3) {
+            if (sscanf (sample_argv[++i], "%d,%d,%d", &r, &g, &b) != 3) {
                 fprintf(stderr, TTF_GLFONT_USAGE, argv0);
                 return(1);
             }
@@ -255,11 +281,11 @@ int main(int argc, char *argv[])
             return(1);
         }
     }
-    argv += i;
-    argc -= i;
+    sample_argv += i;
+    sample_argc -= i;
 
     /* Check usage */
-    if (!argv[0]) {
+    if (!sample_argv[0]) {
         fprintf(stderr, TTF_GLFONT_USAGE, argv0);
         return(1);
     }
@@ -273,8 +299,8 @@ int main(int argc, char *argv[])
 
     /* Open the font file with the requested point size */
     ptsize = 0;
-    if (argc > 1) {
-        ptsize = atoi(argv[1]);
+    if (sample_argc > 1) {
+        ptsize = atoi(sample_argv[1]);
     }
     if (ptsize == 0) {
         i = 2;
@@ -282,10 +308,10 @@ int main(int argc, char *argv[])
     } else {
         i = 3;
     }
-    font = TTF_OpenFont(argv[0], ptsize);
+    font = TTF_OpenFont(sample_argv[0], ptsize);
     if (font == NULL) {
         fprintf(stderr, "Couldn't load %d pt font from %s: %s\n",
-                    ptsize, argv[0], SDL_GetError());
+                    ptsize, sample_argv[0], SDL_GetError());
         cleanup(2);
     }
     TTF_SetFontStyle(font, renderstyle);
@@ -323,8 +349,8 @@ int main(int argc, char *argv[])
     }
 
     /* Render and center the message */
-    if (argc > 2) {
-        message = argv[2];
+    if (sample_argc > 2) {
+        message = sample_argv[2];
     } else {
         message = DEFAULT_TEXT;
     }
